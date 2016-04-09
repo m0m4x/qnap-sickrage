@@ -7,7 +7,7 @@ SickRage server is automatically pulled from git repository when the package is 
 # Install
 
 - Install Git and Python (use the community Python version from http://apps.qnap.community/)
-- You can download the latest QPKG packages here https://github.com/SickRage/QSickRage/releases.
+- You can download the latest QPKG packages here https://github.com/SickRage/qnap-sickrage/releases.
 
 # Contribute
 
