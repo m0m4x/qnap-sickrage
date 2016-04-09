@@ -166,7 +166,17 @@ $CMD_MV $SYS_QPKG_DIR.$$ $SYS_QPKG_DIR
 $CMD_MKDIR -p $SYS_QPKG_DIR/config/
 $CMD_TOUCH $SYS_QPKG_DIR/config/config.ini
 $CMD_SETCFG General web_port 7073 -f $SYS_QPKG_DIR/config/config.ini
-$CMD_SETCFG General git_path /Apps/bin/git -f $SYS_QPKG_DIR/config/config.ini
+
+git_path=""
+for git_check in /Apps/bin/git /Apps/git/bin/git /opt/bin/git /bin/git /usr/bin/git; do
+    [ -x $git_check ] && git_path=$git_check && break
+done
+
+if [ $git_path == "" ] && [ -x $(which git) ]; then
+    git_path=$(which git)
+fi
+
+$CMD_SETCFG General git_path $git_path -f $SYS_QPKG_DIR/config/config.ini
 
 }
 

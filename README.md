@@ -23,10 +23,12 @@ SickRage server is automatically pulled from git repository when the package is 
 
 - Install it by the AppCenter or via the command line `bash build/QSickRage_*.qpkg`.
 
+- Alternatively you can compile this with docker on your PC. See the wiki page  [Building-without-a-QNAP](https://github.com/SickRage/qnap-sickrage/wiki/Building-without-a-QNAP)
 # Authors
 
 - clinton-hall
 - hadim
+- miigotu
 
 # License
 
