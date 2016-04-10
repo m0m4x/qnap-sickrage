@@ -116,9 +116,10 @@ UpdateQpkg(){ # does a git pull to update to the latest code
     #The url to the git repository we're going to install
     GIT_URL=git@github.com:SickRage/SickRage.git
     GIT_URL1=https://github.com/SickRage/SickRage.git
+    GIT_URL2=git://github.com/SickRage/SickRage.git
 
     #git clone/pull the qpkg
-    [ -d $QPKG_DIR/$QPKG_NAME/.git ] || $git_path clone --depth 1 $GIT_URL $QPKG_DIR/$QPKG_NAME || $git_path clone --depth 1 $GIT_URL1 $QPKG_DIR/$QPKG_NAME
+    [ -d $QPKG_DIR/$QPKG_NAME/.git ] || $git_path clone --depth 1 $GIT_URL $QPKG_DIR/$QPKG_NAME || $git_path clone --depth 1 $GIT_URL1 $QPKG_DIR/$QPKG_NAME || $git_path clone --depth 1 $GIT_URL2 $QPKG_DIR/$QPKG_NAME
     cd $QPKG_DIR/$QPKG_NAME && $git_path reset --hard HEAD && $git_path pull && /bin/sync
 }
 
