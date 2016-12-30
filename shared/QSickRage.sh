@@ -25,7 +25,7 @@ fi
 
 export PATH=${QPKG_DIR}/${ver}/bin-utils:/Apps/bin:/usr/local/bin:$PATH
 
-CheckQpkgEnabled() { #Is the QPKG enabled? if not exit the script
+CheckQpkgEnabled() { # Is the QPKG enabled? if not exit the script
   if [ $(/sbin/getcfg ${QPKG_NAME} Enable -u -d FALSE -f /etc/config/qpkg.conf) = UNKNOWN ]; then
         /sbin/setcfg ${QPKG_NAME} Enable TRUE -f /etc/config/qpkg.conf
   elif [ $(/sbin/getcfg ${QPKG_NAME} Enable -u -d FALSE -f /etc/config/qpkg.conf) != TRUE ]; then
@@ -34,8 +34,8 @@ CheckQpkgEnabled() { #Is the QPKG enabled? if not exit the script
   fi
 }
 
-ConfigPython(){ #checks if the daemon exists and will link /usr/bin/python to it
-  #python dependency checking
+ConfigPython(){ # checks if the daemon exists and will link /usr/bin/python to it
+  # python dependency checking
         VER=0
         DAEMON="None"
         for DAEMON2 in /usr/bin/python2.7 /usr/local/bin/python2.7 /opt/bin/python2.7 /Apps/opt/bin/python2.7 /opt/QPython2/bin/python2.7
@@ -56,21 +56,21 @@ ConfigPython(){ #checks if the daemon exists and will link /usr/bin/python to it
         fi
 }
 
-CheckQpkgRunning() { #Is the QPKG already running? if so, exit the script
+CheckQpkgRunning() { # Is the QPKG already running? if so, exit the script
   if [ -f $PID_FILE ]; then
-    #grab pid from pid file
+    # grab pid from pid file
     Pid=$(/bin/cat $PID_FILE)
     if [ -d /proc/$Pid ]; then
       /bin/echo " $QPKG_NAME is already running"
       exit 1
     fi
   fi
-  #ok, we survived so the QPKG should not be running
+  # ok, we survived so the QPKG should not be running
 }
 
 InstallSource(){
-  /bin/echo "Updating $QPKG_NAME"
-  #Install SR if it is not pulled yet
+  /bin/echo "Installing $QPKG_NAME"
+  # Install SR if it is not installed yet
   if [ ! -d $QPKG_DIR/$QPKG_NAME/sickrage ]; then
       cd $QPKG_DIR/$QPKG_NAME
       CUR_COMMIT=$(wget -qO - https://api.github.com/repos/SickRage/SickRage/branches/master | sed -e '/"sha"/!d' -e 's/\s*"sha": "\|",$//g' | head -n1)
@@ -87,10 +87,10 @@ StartQpkg(){
   PATH=${PATH} ${DAEMON} ${DAEMON_OPTS}
 }
 
-ShutdownQPKG() { #kills a proces based on a PID in a given PID file
+ShutdownQPKG() { # kills a proces based on a PID in a given PID file
   /bin/echo "Shutting down ${QPKG_NAME}... "
   if [ -f $PID_FILE ]; then
-    #grab pid from pid file
+    # grab pid from pid file
     Pid=$(/bin/cat $PID_FILE)
     i=0
     /bin/kill $Pid
@@ -115,12 +115,12 @@ ShutdownQPKG() { #kills a proces based on a PID in a given PID file
 
 case "$1" in
   start)
-  CheckQpkgEnabled #Check if the QPKG is enabled, else exit
+  CheckQpkgEnabled # Check if the QPKG is enabled, else exit
   /bin/echo "$QPKG_NAME prestartup checks..."
-  CheckQpkgRunning #Check if the QPKG is not running, else exit
-  ConfigPython   #Check for Python, exit if not found
+  CheckQpkgRunning # Check if the QPKG is not running, else exit
+  ConfigPython   # Check for Python, exit if not found
   InstallSource
-  StartQpkg    #Finally Start the qpkg
+  StartQpkg    # Finally Start the qpkg
 
   ;;
   stop)
