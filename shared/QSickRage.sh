@@ -6,15 +6,23 @@ PID_FILE="$QPKG_DIR/config/sickrage.pid"
 
 DAEMON_OPTS="SickBeard.py --datadir $QPKG_DIR/config --daemon --pidfile $PID_FILE --port 7073"
 
-# Determin Arch
+# Determine Arch
 ver="none"
-if /bin/uname -m | grep "armv5tejl"; then ver="arm"; fi
-if /bin/uname -m | grep "armv5tel"; then ver="arm"; fi
-if /bin/uname -m | grep "i686"; then ver="x86"; fi
-if /bin/uname -m | grep "x86_64"; then ver="x86"; fi
-if /bin/uname -m | grep "armv7l"; then ver="x31"; fi
 arch="$(/bin/uname -m)"
-[ $ver = "none" ] && err_log "Could not determine architecture $arch"
+if echo $arch | grep "armv5tejl"; then
+    ver="arm";
+elif echo $arch | grep "armv5tel"; then
+    ver="arm";
+elif echo $arch | grep "i686"; then
+    ver="x86";
+elif echo $arch | grep "x86_64"; then
+    ver="x86";
+elif echo $arch | grep "armv7l"; then
+    ver="x31";
+else
+    err_log "Could not determine architecture from $arch";
+fi
+
 export PATH=${QPKG_DIR}/${ver}/bin-utils:/Apps/bin:/usr/local/bin:$PATH
 
 CheckQpkgEnabled() { #Is the QPKG enabled? if not exit the script
@@ -24,20 +32,6 @@ CheckQpkgEnabled() { #Is the QPKG enabled? if not exit the script
       /bin/echo "${QPKG_NAME} is disabled."
       exit 1
   fi
-  if [ `/sbin/getcfg "git" Enable -u -d FALSE -f /etc/config/qpkg.conf` = UNKNOWN ]; then
-    /sbin/setcfg "git" Enable TRUE -f /etc/config/qpkg.conf
-  elif [ `/sbin/getcfg "git" Enable -u -d FALSE -f /etc/config/qpkg.conf` != TRUE ]; then
-    echo "git is disabled."
-    exit 1
-  fi
-  #if [ `/sbin/getcfg "Python" Enable -u -d FALSE -f /etc/config/qpkg.conf` = UNKNOWN ]; then
-  # /sbin/setcfg "Python" Enable TRUE -f /etc/config/qpkg.conf
-  #elif [ `/sbin/getcfg "Python" Enable -u -d FALSE -f /etc/config/qpkg.conf` != TRUE ]; then
-  # echo "Python is disabled."
-  # exit 1
-  #fi
-  [ -x /Apps/bin/git ] || /etc/init.d/git.sh restart && sleep 2
-  #[ -x $DAEMON ] || /etc/init.d/python.sh restart && sleep 2
 }
 
 ConfigPython(){ #checks if the daemon exists and will link /usr/bin/python to it
@@ -55,28 +49,11 @@ ConfigPython(){ #checks if the daemon exists and will link /usr/bin/python to it
                 fi
         done
         if [ ! -x $DAEMON ]; then
-                /sbin/write_log "Failed to start $QPKG_NAME, $DAEMON was not found. Please re-install the Pythton qpkg." 1
+                /sbin/write_log "Failed to start $QPKG_NAME, Python was not found. Please re-install the Python qpkg." 1
                 exit 1
         else
                 /bin/echo "Found Python Version ${VER} at ${DAEMON}"
         fi
-}
-
-CheckForGit(){ #Does git exist?
-  /bin/echo -n " Checking for git..."
-  if [ ! -f /Apps/bin/git ]; then
-    if [ -x /etc/init.d/git.sh ]; then
-      /bin/echo "  Starting git..."
-      /etc/init.d/git.sh start
-      sleep 2
-    else #catch all
-      /bin/echo "  No git qpkg found, please install it"
-      /sbin/write_log "Failed to start $QPKG_NAME, no git found." 1
-      exit 1
-    fi
-  else
-    /bin/echo "  Found!"
-  fi
 }
 
 CheckQpkgRunning() { #Is the QPKG already running? if so, exit the script
@@ -91,14 +68,17 @@ CheckQpkgRunning() { #Is the QPKG already running? if so, exit the script
   #ok, we survived so the QPKG should not be running
 }
 
-UpdateQpkg(){ # does a git pull to update to the latest code
+InstallSource(){
   /bin/echo "Updating $QPKG_NAME"
-  #The url to the git repository we're going to install
-  GIT_URL=git@github.com:SickRage/SickRage.git
-  GIT_URL1=https://github.com/SickRage/SickRage.git
-  #git clone/pull the qpkg
-  [ -d $QPKG_DIR/$QPKG_NAME/.git ] || git clone --depth 1 $GIT_URL $QPKG_DIR/$QPKG_NAME || git clone --depth 1 $GIT_URL1 $QPKG_DIR/$QPKG_NAME
-  cd $QPKG_DIR/$QPKG_NAME && git reset --hard HEAD && git pull && /bin/sync
+  #Install SR if it is not pulled yet
+  if [ ! -d $QPKG_DIR/$QPKG_NAME/sickrage ]; then
+      cd $QPKG_DIR/$QPKG_NAME
+      CUR_COMMIT=$(wget -qO - https://api.github.com/repos/SickRage/SickRage/branches/master | sed -e '/"sha"/!d' -e 's/\s*"sha": "\|",$//g' | head -n1)
+      wget -qO- https://github.com/SickRage/SickRage/archive/master.zip
+      ln -s . SickRage-master
+      unzip master.zip
+      rm SickRage-master
+      /bin/sync
 }
 
 StartQpkg(){
@@ -138,9 +118,8 @@ case "$1" in
   CheckQpkgEnabled #Check if the QPKG is enabled, else exit
   /bin/echo "$QPKG_NAME prestartup checks..."
   CheckQpkgRunning #Check if the QPKG is not running, else exit
-  CheckForGit      #Check for /opt, start qpkg if needed
   ConfigPython   #Check for Python, exit if not found
-  UpdateQpkg     #do a git pull
+  InstallSource
   StartQpkg    #Finally Start the qpkg
 
   ;;
