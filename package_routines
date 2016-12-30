@@ -124,52 +124,56 @@
 # performed before the package is installed.
 ######################################################################
 pkg_check_requirement(){
-    #check for an internet connection
-    #/bin/echo -n "Checking for internet: "
-    #$CMD_WGET -q --tries=5 --timeout=5 http://www.google.com -O /tmp/index.google &> /dev/null
-    #if [ ! -s /tmp/index.google ]; then
-    #   err_log "No Internet connection found (can't reach www.google.com)"
-    #else
-    #   /bin/echo "Found!"
-    #   $CMD_RM /tmp/index.google
-    #fi
-#
-#}
+    check for an internet connection
+    $CMD_ECHO -n "Checking for internet: "
+    $CMD_WGET -q --tries=5 --timeout=5 http://www.google.com -O /tmp/index.google &> /dev/null
+    if [ ! -s /tmp/index.google ]; then
+       err_log "No Internet connection found (can't reach www.google.com)"
+    else
+       $CMD_ECHO "Found!"
+       $CMD_RM /tmp/index.google
+    fi
+}
 ######################################################################
 # Define any package specific operations that shall be performed when
 # the package is installed.
 ######################################################################
 pkg_pre_install(){
-#copy important files to the tempdir
-[ -d $SYS_QPKG_DIR.$$ ] || $CMD_MKDIR $SYS_QPKG_DIR.$$
-if [ -f $SYS_QPKG_DIR/config.ini ]; then
-    $CMD_MKDIR $SYS_QPKG_DIR.$$/config
-    $CMD_CP $SYS_QPKG_DIR/config.ini $SYS_QPKG_DIR.$$/config
-    [ -f $SYS_QPKG_DIR/sickbeard.db ] && $CMD_CP $SYS_QPKG_DIR/sickbeard.db $SYS_QPKG_DIR.$$/config
-    [ -f $SYS_QPKG_DIR/cache.db ] && $CMD_CP $SYS_QPKG_DIR/cache.db $SYS_QPKG_DIR.$$/config
-    [ -d $SYS_QPKG_DIR/cache ] && $CMD_CP -r $SYS_QPKG_DIR/cache $SYS_QPKG_DIR.$$/config
-    [ -d $SYS_QPKG_DIR/cache ] && $CMD_CP -r $SYS_QPKG_DIR/cache $SYS_QPKG_DIR.$$/config
-else
-    [ -d $SYS_QPKG_DIR/config ]  && $CMD_CP -rf $SYS_QPKG_DIR/config $SYS_QPKG_DIR.$$
-fi
-/bin/sync
+    #copy important files to the tempdir
+    [ -d $SYS_QPKG_DIR.$$ ] || $CMD_MKDIR $SYS_QPKG_DIR.$$
+    if [ -f $SYS_QPKG_DIR/config.ini ]; then
+        $CMD_MKDIR $SYS_QPKG_DIR.$$/config
+        $CMD_CP $SYS_QPKG_DIR/config.ini $SYS_QPKG_DIR.$$/config
+        [ -f $SYS_QPKG_DIR/sickbeard.db ] && $CMD_CP $SYS_QPKG_DIR/sickbeard.db $SYS_QPKG_DIR.$$/config
+        [ -f $SYS_QPKG_DIR/cache.db ] && $CMD_CP $SYS_QPKG_DIR/cache.db $SYS_QPKG_DIR.$$/config
+        [ -d $SYS_QPKG_DIR/cache ] && $CMD_CP -r $SYS_QPKG_DIR/cache $SYS_QPKG_DIR.$$/config
+        [ -d $SYS_QPKG_DIR/cache ] && $CMD_CP -r $SYS_QPKG_DIR/cache $SYS_QPKG_DIR.$$/config
+    else
+        [ -d $SYS_QPKG_DIR/config ]  && $CMD_CP -rf $SYS_QPKG_DIR/config $SYS_QPKG_DIR.$$
+    fi
+    $CMD_SYNC
 
-#completely remove the old dir
-$CMD_RM -rf $SYS_QPKG_DIR
-/bin/sleep 5 #without sleep this sometimes fails, expect this is a timing issue.
-/bin/sync
+    #completely remove the old dir
+    $CMD_RM -rf $SYS_QPKG_DIR
+    $CMD_SLEEP 5 #without sleep this sometimes fails, expect this is a timing issue.
+    $CMD_SYNC
 
-#move the temp dir to the new dir
-$CMD_MV $SYS_QPKG_DIR.$$ $SYS_QPKG_DIR
-}
-#feed some important stuff to the config file
-$CMD_MKDIR -p $SYS_QPKG_DIR/config/
-$CMD_TOUCH $SYS_QPKG_DIR/config/config.ini
-$CMD_SETCFG General web_port 7073 -f $SYS_QPKG_DIR/config/config.ini
-$CMD_SETCFG General git_path /Apps/bin/git -f $SYS_QPKG_DIR/config/config.ini
-
+    #move the temp dir to the new dir
+    $CMD_MV $SYS_QPKG_DIR.$$ $SYS_QPKG_DIR
 }
 
-#
-#pkg_post_install(){
-#}
+pkg_install(){
+  log "Installing QSickRage"
+  if [ ! -d $SYS_QPKG_DIR/sickrage ]; then
+      cd $SYS_QPKG_DIR
+      CUR_COMMIT=$($CMD_WGET -qO - https://api.github.com/repos/SickRage/SickRage/branches/master | sed -e '/"sha"/!d' -e 's/\s*"sha": "\|",$//g' | head -n1)
+      [ ! -z $CUR_COMMIT ] || log_error "Could not determine newest SickRage commit, try again later"
+      $CMD_WGET -qO- https://github.com/SickRage/SickRage/archive/master.tar.gz | tar xzvf --strip=1 --unlink-first || log_error "Could download and extract the source"
+      $CMD_SYNC
+      
+      $CMD_MKDIR -p $SYS_QPKG_DIR/config/
+      $CMD_TOUCH $SYS_QPKG_DIR/config/config.ini
+      $CMD_SETCFG General web_port 7073 -f $SYS_QPKG_DIR/config/config.ini
+      $CMD_SETCFG General cur_commit_hash $CUR_COMMIT -f $SYS_QPKG_DIR/config/config.ini
+      $CMD_SYNC
+}
