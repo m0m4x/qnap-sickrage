@@ -68,16 +68,6 @@ CheckQpkgRunning() { # Is the QPKG already running? if so, exit the script
   # ok, we survived so the QPKG should not be running
 }
 
-InstallSource(){
-  /bin/echo "Installing $QPKG_NAME"
-  # Install SR if it is not installed yet
-  if [ ! -d $QPKG_DIR/$QPKG_NAME/sickrage ]; then
-      cd $QPKG_DIR/$QPKG_NAME
-      CUR_COMMIT=$(wget -qO - https://api.github.com/repos/SickRage/SickRage/branches/master | sed -e '/"sha"/!d' -e 's/\s*"sha": "\|",$//g' | head -n1)
-      wget -qO- https://github.com/SickRage/SickRage/archive/master.tar.gz | tar xzvf --strip=1
-      /bin/sync
-}
-
 StartQpkg(){
   /bin/echo "Starting $QPKG_NAME"
   cd $QPKG_DIR/$QPKG_NAME
@@ -116,7 +106,6 @@ case "$1" in
   /bin/echo "$QPKG_NAME prestartup checks..."
   CheckQpkgRunning # Check if the QPKG is not running, else exit
   ConfigPython   # Check for Python, exit if not found
-  InstallSource
   StartQpkg    # Finally Start the qpkg
 
   ;;
