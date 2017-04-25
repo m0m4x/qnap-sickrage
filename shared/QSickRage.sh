@@ -4,7 +4,7 @@ QPKG_NAME=QSickRage
 QPKG_DIR=$(/sbin/getcfg $QPKG_NAME Install_Path -f /etc/config/qpkg.conf)
 PID_FILE="$QPKG_DIR/config/sickrage.pid"
 
-DAEMON_OPTS="SickBeard.py --datadir $QPKG_DIR/config --daemon --pidfile $PID_FILE --port 7073"
+DAEMON_OPTS="SickBeard.py --datadir $QPKG_DIR/config --daemon --pidfile $PID_FILE "
 
 # Determin Arch
 ver="none"
@@ -15,7 +15,7 @@ if /bin/uname -m | grep "x86_64"; then ver="x86"; fi
 if /bin/uname -m | grep "armv7l"; then ver="x31"; fi
 arch="$(/bin/uname -m)"
 [ $ver = "none" ] && err_log "Could not determine architecture $arch"
-export PATH=${QPKG_DIR}/${ver}/bin-utils:/Apps/bin:/usr/local/bin:$PATH
+export PATH=${QPKG_DIR}/${ver}/bin-utils:/Apps/bin:/opt/bin:/usr/local/bin:$PATH
 
 CheckQpkgEnabled() { #Is the QPKG enabled? if not exit the script
   if [ $(/sbin/getcfg ${QPKG_NAME} Enable -u -d FALSE -f /etc/config/qpkg.conf) = UNKNOWN ]; then
@@ -24,27 +24,39 @@ CheckQpkgEnabled() { #Is the QPKG enabled? if not exit the script
       /bin/echo "${QPKG_NAME} is disabled."
       exit 1
   fi
-  if [ `/sbin/getcfg "git" Enable -u -d FALSE -f /etc/config/qpkg.conf` = UNKNOWN ]; then
-    /sbin/setcfg "git" Enable TRUE -f /etc/config/qpkg.conf
-  elif [ `/sbin/getcfg "git" Enable -u -d FALSE -f /etc/config/qpkg.conf` != TRUE ]; then
-    echo "git is disabled."
-    exit 1
-  fi
-  #if [ `/sbin/getcfg "Python" Enable -u -d FALSE -f /etc/config/qpkg.conf` = UNKNOWN ]; then
-  # /sbin/setcfg "Python" Enable TRUE -f /etc/config/qpkg.conf
-  #elif [ `/sbin/getcfg "Python" Enable -u -d FALSE -f /etc/config/qpkg.conf` != TRUE ]; then
-  # echo "Python is disabled."
-  # exit 1
-  #fi
+  #check Entware
+  if [ `/sbin/getcfg "Entware-ng" Enable -u -d FALSE -f /etc/config/qpkg.conf` = TRUE ]; then
+    if ! opkg status git | grep install >&/dev/null ; then
+      echo "Please install git running 'opkg install git'";
+      exit 1
+    fi
+    if ! opkg status python | grep install >&/dev/null ; then
+      echo "Please install python running 'opkg install python'";
+      exit 1
+    fi
+  else #check Packages
+    if [ `/sbin/getcfg "git" Enable -u -d FALSE -f /etc/config/qpkg.conf` = UNKNOWN ]; then
+      /sbin/setcfg "git" Enable TRUE -f /etc/config/qpkg.conf
+    elif [ `/sbin/getcfg "git" Enable -u -d FALSE -f /etc/config/qpkg.conf` != TRUE ]; then
+      echo "git is disabled."
+      exit 1
+    fi
+    if [ `/sbin/getcfg "Python" Enable -u -d FALSE -f /etc/config/qpkg.conf` = UNKNOWN ]; then
+     /sbin/setcfg "Python" Enable TRUE -f /etc/config/qpkg.conf
+    elif [ `/sbin/getcfg "Python" Enable -u -d FALSE -f /etc/config/qpkg.conf` != TRUE ]; then
+     echo "Python is disabled."
+     exit 1
+    fi
   [ -x /Apps/bin/git ] || /etc/init.d/git.sh restart && sleep 2
   #[ -x $DAEMON ] || /etc/init.d/python.sh restart && sleep 2
+  fi
 }
 
 ConfigPython(){ #checks if the daemon exists and will link /usr/bin/python to it
   #python dependency checking
         VER=0
         DAEMON="None"
-        for DAEMON2 in /usr/bin/python2.7 /usr/local/bin/python2.7 /opt/bin/python2.7 /Apps/opt/bin/python2.7 /opt/QPython2/bin/python2.7
+        for DAEMON2 in /usr/bin/python2.7 /usr/local/bin/python2.7 /opt/bin/python2.7 /opt/bin/python2.7 /opt/QPython2/bin/python2.7
         do
                 echo "Looking for $DAEMON2"
                 [ ! -x $DAEMON2 ] && continue
@@ -64,15 +76,19 @@ ConfigPython(){ #checks if the daemon exists and will link /usr/bin/python to it
 
 CheckForGit(){ #Does git exist?
   /bin/echo -n " Checking for git..."
-  if [ ! -f /Apps/bin/git ]; then
-    if [ -x /etc/init.d/git.sh ]; then
-      /bin/echo "  Starting git..."
-      /etc/init.d/git.sh start
-      sleep 2
-    else #catch all
-      /bin/echo "  No git qpkg found, please install it"
-      /sbin/write_log "Failed to start $QPKG_NAME, no git found." 1
-      exit 1
+  if ! git_loc="$(type -p "git")" || [ -z "$git_loc" ]; then
+    if [ ! -f /Apps/bin/git ]; then
+      if [ -x /etc/init.d/git.sh ]; then
+        /bin/echo "  Starting git..."
+        /etc/init.d/git.sh start
+        sleep 2
+      else #catch all
+        /bin/echo "  No git qpkg found, please install it"
+        /sbin/write_log "Failed to start $QPKG_NAME, no git found." 1
+        exit 1
+      fi
+    else
+      /bin/echo "  Found!"
     fi
   else
     /bin/echo "  Found!"
@@ -95,7 +111,7 @@ UpdateQpkg(){ # does a git pull to update to the latest code
   /bin/echo "Updating $QPKG_NAME"
   #The url to the git repository we're going to install
   GIT_URL=git@github.com:SickRage/SickRage.git
-  GIT_URL1=https://github.com/SickRage/SickRage.git
+  GIT_URL1=git://github.com/SickRage/SickRage.git
   #git clone/pull the qpkg
   [ -d $QPKG_DIR/$QPKG_NAME/.git ] || git clone --depth 1 $GIT_URL $QPKG_DIR/$QPKG_NAME || git clone --depth 1 $GIT_URL1 $QPKG_DIR/$QPKG_NAME
   cd $QPKG_DIR/$QPKG_NAME && git reset --hard HEAD && git pull && /bin/sync
@@ -142,7 +158,9 @@ case "$1" in
   ConfigPython   #Check for Python, exit if not found
   UpdateQpkg     #do a git pull
   StartQpkg    #Finally Start the qpkg
-
+  
+  # add simlink
+  [ -e /opt/$QPKG_NAME ] || ln -sf $QPKG_DIR /opt/$QPKG_NAME
   ;;
   stop)
     ShutdownQPKG
