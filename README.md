@@ -4,11 +4,20 @@ SickRage server for QNAP NAS.
 
 SickRage server is automatically pulled from git repository when the package is installed. The repository used is https://github.com/SickRage/SickRage/.
 
-# Install
+# Requisites
+
+- Install Git and Python from Entware-ng with
+  > opkg install git
+  
+  > opkg install python
+
+or
 
 - Install Git and Python (use the community Python version from http://apps.qnap.community/)
-- You can download the latest QPKG packages here https://github.com/SickRage/qnap-sickrage/releases.
+ 
+# Install
 
+  
 # Contribute
 
 - First you need to install the QDK package to your QNAP NAS. You can download it here http://wiki.qnap.com/wiki/QPKG_Development_Guidelines.
