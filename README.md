@@ -17,6 +17,7 @@ or
  
 # Install
 
+- You can download the latest QPKG packages here https://github.com/m0m4x/qnap-sickrage/tree/master/releases .
   
 # Contribute
 
